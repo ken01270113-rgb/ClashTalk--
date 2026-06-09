@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}人気討論ランキング - 討論SNS{% endblock %}
+
+{% block content %}
+<div style="padding: 20px 0;">
+
+  <!-- ランキングヘッダー -->
+  <div class="ranking-page-header">
+    <h1>🏆 人気討論ランキング</h1>
+    <p>投稿数・いいね数・コメント数の総合スコアによるランキングです</p>
+  </div>
+
+  <!-- ランキング一覧 -->
+  {% if popular_debates %}
+    {% for debate in popular_debates %}
+    <a href="{% url 'debates:detail' debate.pk %}" class="ranking-full-item">
+      <div class="ranking-full-num {% if forloop.counter == 1 %}rank-1{% elif forloop.counter == 2 %}rank-2{% elif forloop.counter == 3 %}rank-3{% else %}rank-other{% endif %}">
+        {% if forloop.counter == 1 %}🥇
+        {% elif forloop.counter == 2 %}🥈
+        {% elif forloop.counter == 3 %}🥉
+        {% else %}{{ forloop.counter }}{% endif %}
+      </div>
+      <div class="ranking-full-content">
+        <div class="ranking-full-title">{{ debate.title }}</div>
+        <div class="ranking-full-meta">
+          {% if debate.category %}
+          <span class="badge badge-category" style="font-size: 0.75rem;">{{ debate.category.icon }} {{ debate.category.name }}</span>
+          {% endif %}
+          <span>💬 {{ debate.total_posts }}件の意見</span>
+          <span>❤️ {{ debate.total_likes }}いいね</span>
+          <span>🕐 {{ debate.created_at|date:"Y/m/d" }}</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; flex-shrink: 0;">
+        <span class="badge badge-pro" style="font-size: 0.75rem;">👍 {{ debate.pro_label }}: {{ debate.pro_posts.count }}</span>
+        <span class="badge badge-con" style="font-size: 0.75rem;">👎 {{ debate.con_label }}: {{ debate.con_posts.count }}</span>
+      </div>
+    </a>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">🏆</div>
+      <h3 class="empty-state-title">まだランキングデータがありません</h3>
+      <p class="empty-state-desc">最初の討論を作成してランキングに参加しましょう！</p>
+      <a href="{% url 'debates:create' %}" class="btn btn-primary">✏️ 討論を作成する</a>
+    </div>
+  {% endif %}
+
+  <!-- 戻るボタン -->
+  <div style="text-align: center; margin-top: 32px;">
+    <a href="{% url 'debates:home' %}" class="btn btn-ghost">← ホームに戻る</a>
+  </div>
+
+</div>
+{% endblock %}

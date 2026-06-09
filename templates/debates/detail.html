@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ debate.title }} - 討論SNS{% endblock %}
+{% block meta_description %}{{ debate.description|truncatechars:120 }}{% endblock %}
+
+{% block content %}
+<div style="padding: 20px 0;">
+
+  <!-- パンくずリスト -->
+  <nav style="margin-bottom: 16px; font-size: 0.85rem; color: var(--text-muted);">
+    <a href="{% url 'debates:home' %}" style="color: var(--text-muted);">ホーム</a>
+    <span style="margin: 0 6px;">›</span>
+    {% if debate.category %}
+    <a href="{% url 'debates:category' debate.category.slug %}" style="color: var(--text-muted);">{{ debate.category.name }}</a>
+    <span style="margin: 0 6px;">›</span>
+    {% endif %}
+    <span style="color: var(--text);">{{ debate.title|truncatechars:40 }}</span>
+  </nav>
+
+  <!-- 討論ヘッダー -->
+  <div class="debate-header">
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px;">
+      <h1 class="debate-title">{{ debate.title }}</h1>
+      {% if debate.category %}
+      <a href="{% url 'debates:category' debate.category.slug %}" class="badge badge-category" style="flex-shrink: 0; text-decoration: none;">
+        {{ debate.category.icon }} {{ debate.category.name }}
+      </a>
+      {% endif %}
+    </div>
+    <p class="debate-description">{{ debate.description }}</p>
+    <div class="debate-meta-row">
+      <span style="font-size: 0.82rem; color: var(--text-muted);">
+        🕐 {{ debate.created_at|date:"Y年m月d日 H:i" }}
+      </span>
+      <span style="font-size: 0.82rem; color: var(--text-muted);">
+        👤 {{ debate.author_name }}
+      </span>
+      <span style="font-size: 0.82rem; color: var(--text-muted);">
+        💬 {{ debate.total_posts }}件の意見
+      </span>
+      <span style="font-size: 0.82rem; color: var(--text-muted);">
+        ❤️ {{ debate.total_likes }}いいね
+      </span>
+    </div>
+  </div>
+
+  <!-- 賛否スコアバー -->
+  <div class="score-bar-container">
+    <div class="score-labels">
+      <span class="score-label pro">👍 {{ debate.pro_label }}</span>
+      <span class="score-label con">{{ debate.con_label }} 👎</span>
+    </div>
+    <div class="score-counts">
+      <span class="pro-count">{{ pro_count }}</span>
+      <span style="font-size: 1rem; color: var(--text-muted); align-self: center;">vs</span>
+      <span class="con-count">{{ con_count }}</span>
+    </div>
+    <div class="score-bar">
+      {% if pro_count or con_count %}
+      {% with total=pro_count|add:con_count %}
+      <div class="score-bar-fill"
+           style="width: {% if total > 0 %}{% widthratio pro_count total 100 %}{% else %}50{% endif %}%;">
+      </div>
+      {% endwith %}
+      {% else %}
+      <div class="score-bar-fill" style="width: 50%;"></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 投稿フォーム -->
+  <div class="post-form-card">
+    <h3 class="post-form-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+      あなたの意見を投稿する
+    </h3>
+    <form id="post-form" method="post" action="{% url 'debates:post_create' debate.pk %}" data-debate-id="{{ debate.pk }}">
+      {% csrf_token %}
+
+      <!-- 賛成/反対セレクター -->
+      <div class="side-selector">
+        <div class="side-option">
+          <input type="radio" name="side" id="side-pro" value="pro" required>
+          <label for="side-pro" class="pro-label">
+            👍 {{ debate.pro_label }}
+          </label>
+        </div>
+        <div class="side-option">
+          <input type="radio" name="side" id="side-con" value="con" required>
+          <label for="side-con" class="con-label">
+            👎 {{ debate.con_label }}
+          </label>
+        </div>
+      </div>
+
+      <!-- 意見入力 -->
+      <textarea
+        name="content"
+        class="post-textarea"
+        placeholder="あなたの意見を書いてください（5〜1000文字）"
+        rows="3"
+        maxlength="1000"
+        data-max-length="1000"
+        data-counter-id="post-char-counter"
+        required
+      ></textarea>
+
+      <div class="post-form-footer">
+        <span class="char-counter" id="post-char-counter">0 / 1000</span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input type="text" name="author_name" placeholder="名前（省略可）" maxlength="50"
+                 style="padding: 7px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.85rem; background: var(--surface); color: var(--text); width: 140px;">
+          <button type="submit" class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+            </svg>
+            投稿する
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- 並び替え -->
+  <div class="sort-bar" style="margin-bottom: 16px;">
+    <span>並び替え：</span>
+    <a href="?sort=new" class="sort-btn {% if sort == 'new' %}active{% endif %}">🕐 新着順</a>
+    <a href="?sort=likes" class="sort-btn {% if sort == 'likes' %}active{% endif %}">❤️ いいね順</a>
+  </div>
+
+  <!-- 2カラム討論エリア -->
+  <div class="debate-columns">
+
+    <!-- 賛成カラム -->
+    <div class="debate-column">
+      <div class="column-header pro">
+        <span>👍 {{ debate.pro_label }}</span>
+        <span class="column-count">{{ pro_count }}</span>
+      </div>
+
+      <div id="column-pro">
+        {% if pro_posts_with_comments %}
+          {% for item in pro_posts_with_comments %}
+          {% include 'debates/_post_card.html' with post=item.post root_comments=item.root_comments comment_form=item.comment_form liked=item.liked side='pro' %}
+          {% endfor %}
+        {% else %}
+        <div class="empty-state" style="padding: 32px 16px;">
+          <div class="empty-state-icon">💬</div>
+          <p class="empty-state-desc">まだ賛成意見がありません</p>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">最初に意見を投稿しましょう！</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 反対カラム -->
+    <div class="debate-column">
+      <div class="column-header con">
+        <span>👎 {{ debate.con_label }}</span>
+        <span class="column-count">{{ con_count }}</span>
+      </div>
+
+      <div id="column-con">
+        {% if con_posts_with_comments %}
+          {% for item in con_posts_with_comments %}
+          {% include 'debates/_post_card.html' with post=item.post root_comments=item.root_comments comment_form=item.comment_form liked=item.liked side='con' %}
+          {% endfor %}
+        {% else %}
+        <div class="empty-state" style="padding: 32px 16px;">
+          <div class="empty-state-icon">💬</div>
+          <p class="empty-state-desc">まだ反対意見がありません</p>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">最初に意見を投稿しましょう！</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- 関連討論 -->
+  {% if related_debates %}
+  <div style="margin-top: 32px;">
+    <h3 style="font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 12px;">
+      📌 関連する討論
+    </h3>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      {% for rd in related_debates %}
+      <a href="{% url 'debates:detail' rd.pk %}" class="debate-card" style="margin-bottom: 0;">
+        <div class="debate-card-header">
+          <span class="debate-card-title" style="font-size: 0.95rem;">{{ rd.title }}</span>
+        </div>
+        <div class="debate-card-footer">
+          <span class="debate-card-meta">💬 {{ rd.total_posts }}件</span>
+          <span class="debate-card-meta">❤️ {{ rd.total_likes }}</span>
+          <span class="debate-card-meta">🕐 {{ rd.created_at|date:"m/d" }}</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

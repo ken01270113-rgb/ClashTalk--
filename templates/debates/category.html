@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ category.icon }} {{ category.name }} の討論 - 討論SNS{% endblock %}
+
+{% block content %}
+<div style="padding: 20px 0;">
+
+  <!-- パンくずリスト -->
+  <nav style="margin-bottom: 16px; font-size: 0.85rem; color: var(--text-muted);">
+    <a href="{% url 'debates:home' %}" style="color: var(--text-muted);">ホーム</a>
+    <span style="margin: 0 6px;">›</span>
+    <span style="color: var(--text);">{{ category.name }}</span>
+  </nav>
+
+  <!-- カテゴリーヘッダー -->
+  <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow-sm);">
+    <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text); margin-bottom: 8px;">
+      {{ category.icon }} {{ category.name }}
+    </h1>
+    {% if category.description %}
+    <p style="font-size: 0.9rem; color: var(--text-secondary);">{{ category.description }}</p>
+    {% endif %}
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
+      {{ page_obj.paginator.count }} 件の討論
+    </p>
+  </div>
+
+  <!-- 並び替え -->
+  <div class="sort-bar" style="margin-bottom: 16px;">
+    <span>並び替え：</span>
+    <a href="?sort=new" class="sort-btn {% if sort == 'new' %}active{% endif %}">🕐 新着順</a>
+    <a href="?sort=popular" class="sort-btn {% if sort == 'popular' %}active{% endif %}">🔥 人気順</a>
+    <a href="?sort=comments" class="sort-btn {% if sort == 'comments' %}active{% endif %}">💬 コメント数順</a>
+    <a href="?sort=likes" class="sort-btn {% if sort == 'likes' %}active{% endif %}">❤️ いいね順</a>
+  </div>
+
+  <!-- 討論一覧 -->
+  {% if page_obj.object_list %}
+    {% for debate in page_obj.object_list %}
+    <a href="{% url 'debates:detail' debate.pk %}" class="debate-card">
+      <div class="debate-card-header">
+        <h3 class="debate-card-title">{{ debate.title }}</h3>
+      </div>
+      <p class="debate-card-desc">{{ debate.description }}</p>
+      <div class="debate-card-footer">
+        <div class="debate-card-meta">
+          <span class="badge badge-pro">👍 {{ debate.pro_label }}</span>
+          <span style="color: var(--text-muted); margin: 0 4px;">vs</span>
+          <span class="badge badge-con">👎 {{ debate.con_label }}</span>
+        </div>
+        <div class="debate-card-meta">💬 {{ debate.total_posts }}件</div>
+        <div class="debate-card-meta">❤️ {{ debate.total_likes }}</div>
+        <div class="debate-card-meta">🕐 {{ debate.created_at|date:"Y/m/d" }}</div>
+      </div>
+    </a>
+    {% endfor %}
+
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+      {% if page_obj.has_previous %}
+      <a href="?sort={{ sort }}&page={{ page_obj.previous_page_number }}" class="page-link">← 前へ</a>
+      {% endif %}
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <span class="page-link active">{{ num }}</span>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <a href="?sort={{ sort }}&page={{ num }}" class="page-link">{{ num }}</a>
+        {% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+      <a href="?sort={{ sort }}&page={{ page_obj.next_page_number }}" class="page-link">次へ →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">{{ category.icon }}</div>
+      <h3 class="empty-state-title">{{ category.name }} カテゴリーにはまだ討論がありません</h3>
+      <p class="empty-state-desc">最初の討論を作成してみましょう！</p>
+      <a href="{% url 'debates:create' %}" class="btn btn-primary">✏️ 討論を作成する</a>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

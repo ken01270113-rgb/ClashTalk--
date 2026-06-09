@@ -1,0 +1,73 @@
+{% load static %}
+<!-- 投稿カード（賛成/反対共通） -->
+<div class="post-card {{ side }}" data-post-id="{{ post.pk }}">
+  <!-- 投稿者情報 -->
+  <div class="post-author">
+    <div class="post-avatar {{ side }}">{{ post.author_name|first|upper }}</div>
+    <span class="post-author-name">{{ post.author_name }}</span>
+    <span class="post-time">{{ post.created_at|date:"Y/m/d H:i" }}</span>
+  </div>
+
+  <!-- 投稿内容 -->
+  <p class="post-content">{{ post.content }}</p>
+
+  <!-- アクション -->
+  <div class="post-actions">
+    <!-- いいねボタン -->
+    <button class="like-btn {% if liked %}liked{% endif %}"
+            data-post-id="{{ post.pk }}"
+            title="いいね">
+      <svg viewBox="0 0 24 24" fill="{% if liked %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+      <span class="like-count">{{ post.likes_count }}</span>
+    </button>
+
+    <!-- コメントトグルボタン -->
+    <button class="comment-toggle-btn"
+            data-post-id="{{ post.pk }}"
+            aria-expanded="false">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      <span class="comment-toggle-count">{{ post.all_comments_count }}</span>件のコメント
+    </button>
+  </div>
+
+  <!-- コメントセクション -->
+  <div class="comments-section" id="comments-{{ post.pk }}" data-post-id="{{ post.pk }}">
+    <!-- コメント一覧 -->
+    <ul class="comment-list">
+      {% for comment in root_comments %}
+      <li class="comment-item" data-comment-id="{{ comment.pk }}">
+        <div class="comment-header">
+          <span class="comment-author">{{ comment.author_name }}</span>
+          <span class="comment-time">{{ comment.created_at|date:"m/d H:i" }}</span>
+        </div>
+        <p class="comment-content">{{ comment.content }}</p>
+        <button class="comment-reply-btn" data-comment-id="{{ comment.pk }}">返信する</button>
+
+        <!-- 返信（1階層） -->
+        {% for reply in comment.replies.all %}
+        {% if reply.is_active %}
+        <li class="comment-item reply" data-comment-id="{{ reply.pk }}">
+          <div class="comment-header">
+            <span class="comment-author">↩ {{ reply.author_name }}</span>
+            <span class="comment-time">{{ reply.created_at|date:"m/d H:i" }}</span>
+          </div>
+          <p class="comment-content">{{ reply.content }}</p>
+        </li>
+        {% endif %}
+        {% endfor %}
+      </li>
+      {% endfor %}
+    </ul>
+
+    <!-- コメント投稿フォーム -->
+    <form class="comment-form comment-form-ajax" data-post-id="{{ post.pk }}">
+      {% csrf_token %}
+      <textarea name="content" placeholder="コメントを入力..." rows="2" maxlength="500"></textarea>
+      <button type="submit">送信</button>
+    </form>
+  </div>
+</div>

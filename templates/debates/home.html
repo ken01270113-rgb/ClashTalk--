@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ClashTalk - 対戦型ディベート{% endblock %}
+
+{% block content %}
+<div style="padding: 20px 0;">
+
+  <!-- ヒーローセクション（初回のみ表示） -->
+  {% if not query and not selected_category %}
+  <div class="hero-section">
+    <h1 class="hero-title">⚡ 対戦型ディベート</h1>
+    <p class="hero-subtitle">様々な議題について賛成・反対に分かれ、あなたの意見を発信しましょう</p>
+    <div class="hero-actions">
+      <a href="{% url 'debates:create' %}" class="btn btn-white btn-lg">✏️ 討論を作成する</a>
+      <a href="{% url 'debates:ranking' %}" class="btn btn-outline-white btn-lg">🏆 ランキングを見る</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- カテゴリーバー -->
+  <div class="category-bar">
+    <div class="category-bar-title">カテゴリー</div>
+    <div class="category-chips">
+      <a href="{% url 'debates:home' %}{% if sort != 'new' %}?sort={{ sort }}{% endif %}"
+         class="category-chip {% if not selected_category %}active{% endif %}">
+        💬 すべて
+      </a>
+      {% for cat in categories %}
+      <a href="{% url 'debates:category' cat.slug %}"
+         class="category-chip {% if selected_category.slug == cat.slug %}active{% endif %}">
+        {{ cat.icon }} {{ cat.name }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- メインレイアウト -->
+  <div class="home-layout">
+
+    <!-- 左カラム：討論一覧 -->
+    <div class="main-content">
+
+      <!-- 検索結果ヘッダー -->
+      {% if query or selected_category %}
+      <div class="search-header">
+        <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--text);">
+          {% if query %}
+            🔍 「{{ query }}」の検索結果
+          {% elif selected_category %}
+            {{ selected_category.icon }} {{ selected_category.name }} の討論
+          {% endif %}
+        </h2>
+        <p class="search-result-count">
+          <strong>{{ page_obj.paginator.count }}</strong> 件の討論が見つかりました
+        </p>
+      </div>
+      {% endif %}
+
+      <!-- 並び替えバー -->
+      <div class="sort-bar">
+        <span>並び替え：</span>
+        {% with base_url=request.path %}
+        <a href="?{% if query %}q={{ query }}&{% endif %}{% if selected_category %}category={{ selected_category.slug }}&{% endif %}sort=new"
+           class="sort-btn {% if sort == 'new' %}active{% endif %}">🕐 新着順</a>
+        <a href="?{% if query %}q={{ query }}&{% endif %}{% if selected_category %}category={{ selected_category.slug }}&{% endif %}sort=popular"
+           class="sort-btn {% if sort == 'popular' %}active{% endif %}">🔥 人気順</a>
+        <a href="?{% if query %}q={{ query }}&{% endif %}{% if selected_category %}category={{ selected_category.slug }}&{% endif %}sort=comments"
+           class="sort-btn {% if sort == 'comments' %}active{% endif %}">💬 コメント数順</a>
+        <a href="?{% if query %}q={{ query }}&{% endif %}{% if selected_category %}category={{ selected_category.slug }}&{% endif %}sort=likes"
+           class="sort-btn {% if sort == 'likes' %}active{% endif %}">❤️ いいね順</a>
+        {% endwith %}
+      </div>
+
+      <!-- 討論一覧 -->
+      {% if page_obj.object_list %}
+        {% for debate in page_obj.object_list %}
+        <a href="{% url 'debates:detail' debate.pk %}" class="debate-card">
+          <div class="debate-card-header">
+            <h3 class="debate-card-title">{{ debate.title }}</h3>
+            {% if debate.category %}
+            <span class="badge badge-category">{{ debate.category.icon }} {{ debate.category.name }}</span>
+            {% endif %}
+          </div>
+          <p class="debate-card-desc">{{ debate.description }}</p>
+          <div class="debate-card-footer">
+            <div class="debate-card-meta">
+              <span class="badge badge-pro">👍 {{ debate.pro_label }}</span>
+              <span style="color: var(--text-muted); margin: 0 4px;">vs</span>
+              <span class="badge badge-con">👎 {{ debate.con_label }}</span>
+            </div>
+            <div class="debate-card-meta">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              {{ debate.total_posts }}件の意見
+            </div>
+            <div class="debate-card-meta">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+              {{ debate.total_likes }}いいね
+            </div>
+            <div class="debate-card-meta">
+              🕐 {{ debate.created_at|date:"Y/m/d" }}
+            </div>
+          </div>
+        </a>
+        {% endfor %}
+
+        <!-- ページネーション -->
+        {% if page_obj.has_other_pages %}
+        <div class="pagination">
+          {% if page_obj.has_previous %}
+          <a href="?{% if query %}q={{ query }}&{% endif %}{% if selected_category %}category={{ selected_category.slug }}&{% endif %}sort={{ sort }}&page={{ page_obj.previous_page_number }}"
+             class="page-link">← 前へ</a>
+          {% endif %}
+
+          {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <span class="page-link active">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <a href="?{% if query %}q={{ query }}&{% endif %}{% if selected_category %}category={{ selected_category.slug }}&{% endif %}sort={{ sort }}&page={{ num }}"
+               class="page-link">{{ num }}</a>
+            {% endif %}
+          {% endfor %}
+
+          {% if page_obj.has_next %}
+          <a href="?{% if query %}q={{ query }}&{% endif %}{% if selected_category %}category={{ selected_category.slug }}&{% endif %}sort={{ sort }}&page={{ page_obj.next_page_number }}"
+             class="page-link">次へ →</a>
+          {% endif %}
+        </div>
+        {% endif %}
+
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">💬</div>
+          <h3 class="empty-state-title">
+            {% if query %}「{{ query }}」に一致する討論が見つかりませんでした
+            {% else %}まだ討論がありません{% endif %}
+          </h3>
+          <p class="empty-state-desc">最初の討論を作成してみましょう！</p>
+          <a href="{% url 'debates:create' %}" class="btn btn-primary">✏️ 討論を作成する</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- 右サイドバー -->
+    <aside class="sidebar">
+
+      <!-- 討論を作成ボタン -->
+      <a href="{% url 'debates:create' %}" class="btn btn-primary w-full" style="justify-content: center; padding: 14px;">
+        ✏️ 討論を作成する
+      </a>
+
+      <!-- 人気討論ランキング -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">
+          🏆 人気討論ランキング TOP10
+        </div>
+        <div class="sidebar-card-body">
+          {% if popular_debates %}
+          <ul class="ranking-list">
+            {% for debate in popular_debates %}
+            <li class="ranking-item">
+              <div class="ranking-num {% if forloop.counter == 1 %}rank-1{% elif forloop.counter == 2 %}rank-2{% elif forloop.counter == 3 %}rank-3{% else %}rank-other{% endif %}">
+                {% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}{{ forloop.counter }}{% endif %}
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <a href="{% url 'debates:detail' debate.pk %}" class="ranking-title" style="display: block; color: var(--text); text-decoration: none;">
+                  {{ debate.title }}
+                </a>
+                <div class="ranking-meta">
+                  💬 {{ debate.total_posts }}件 ❤️ {{ debate.total_likes }}
+                </div>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+          <div style="text-align: center; margin-top: 8px;">
+            <a href="{% url 'debates:ranking' %}" class="btn btn-ghost btn-sm w-full" style="justify-content: center;">
+              ランキングをもっと見る
+            </a>
+          </div>
+          {% else %}
+          <p style="text-align: center; color: var(--text-muted); padding: 16px; font-size: 0.85rem;">
+            まだ討論がありません
+          </p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- カテゴリー一覧 -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">
+          📂 カテゴリー
+        </div>
+        <div class="sidebar-card-body">
+          <ul class="category-list">
+            {% for cat in categories %}
+            <li class="category-list-item">
+              <a href="{% url 'debates:category' cat.slug %}">
+                <span>{{ cat.icon }} {{ cat.name }}</span>
+                <span class="cat-count">{{ cat.debates.count }}</span>
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <!-- 新着討論 -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">
+          🕐 新着討論
+        </div>
+        <div class="sidebar-card-body">
+          {% if latest_debates %}
+          <ul style="list-style: none;">
+            {% for debate in latest_debates|slice:":5" %}
+            <li style="padding: 8px 4px; border-bottom: 1px solid var(--border);">
+              <a href="{% url 'debates:detail' debate.pk %}"
+                 style="font-size: 0.85rem; font-weight: 500; color: var(--text); text-decoration: none; display: block; line-height: 1.4;">
+                {{ debate.title }}
+              </a>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">{{ debate.created_at|date:"m/d H:i" }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p style="text-align: center; color: var(--text-muted); padding: 16px; font-size: 0.85rem;">
+            まだ討論がありません
+          </p>
+          {% endif %}
+        </div>
+      </div>
+
+    </aside>
+  </div>
+</div>
+{% endblock %}

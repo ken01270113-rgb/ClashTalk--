@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  {% if query %}「{{ query }}」の検索結果{% else %}討論を検索{% endif %} - 討論SNS
+{% endblock %}
+
+{% block content %}
+<div style="padding: 20px 0;">
+
+  <!-- 検索ヘッダー -->
+  <div class="search-header">
+    <h1 style="font-size: 1.3rem; font-weight: 800; color: var(--text);">
+      🔍 {% if query %}「{{ query }}」の検索結果{% else %}討論を検索{% endif %}
+    </h1>
+    {% if query %}
+    <p class="search-result-count">
+      <strong>{{ result_count }}</strong> 件の討論が見つかりました
+    </p>
+    {% endif %}
+
+    <!-- 検索フォーム -->
+    <form method="get" action="{% url 'debates:search' %}" style="margin-top: 16px;">
+      <div style="display: flex; gap: 8px;">
+        <input type="text" name="q" value="{{ query }}"
+               placeholder="キーワードを入力..."
+               style="flex: 1; padding: 10px 16px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 0.95rem; background: var(--surface); color: var(--text);">
+        <button type="submit" class="btn btn-primary">検索</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- カテゴリーフィルター -->
+  <div class="category-bar" style="margin-bottom: 16px;">
+    <div class="category-bar-title">カテゴリーで絞り込む</div>
+    <div class="category-chips">
+      <a href="{% url 'debates:search' %}{% if query %}?q={{ query }}{% endif %}"
+         class="category-chip {% if not selected_category %}active{% endif %}">
+        💬 すべて
+      </a>
+      {% for cat in global_categories %}
+      <a href="{% url 'debates:search' %}?{% if query %}q={{ query }}&{% endif %}category={{ cat.slug }}"
+         class="category-chip {% if selected_category.slug == cat.slug %}active{% endif %}">
+        {{ cat.icon }} {{ cat.name }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- 並び替え -->
+  <div class="sort-bar" style="margin-bottom: 16px;">
+    <span>並び替え：</span>
+    <a href="?{% if query %}q={{ query }}&{% endif %}{% if selected_category %}category={{ selected_category.slug }}&{% endif %}sort=new"
+       class="sort-btn {% if sort == 'new' %}active{% endif %}">🕐 新着順</a>
+    <a href="?{% if query %}q={{ query }}&{% endif %}{% if selected_category %}category={{ selected_category.slug }}&{% endif %}sort=popular"
+       class="sort-btn {% if sort == 'popular' %}active{% endif %}">🔥 人気順</a>
+    <a href="?{% if query %}q={{ query }}&{% endif %}{% if selected_category %}category={{ selected_category.slug }}&{% endif %}sort=comments"
+       class="sort-btn {% if sort == 'comments' %}active{% endif %}">💬 コメント数順</a>
+    <a href="?{% if query %}q={{ query }}&{% endif %}{% if selected_category %}category={{ selected_category.slug }}&{% endif %}sort=likes"
+       class="sort-btn {% if sort == 'likes' %}active{% endif %}">❤️ いいね順</a>
+  </div>
+
+  <!-- 検索結果 -->
+  {% if page_obj.object_list %}
+    {% for debate in page_obj.object_list %}
+    <a href="{% url 'debates:detail' debate.pk %}" class="debate-card">
+      <div class="debate-card-header">
+        <h3 class="debate-card-title">{{ debate.title }}</h3>
+        {% if debate.category %}
+        <span class="badge badge-category">{{ debate.category.icon }} {{ debate.category.name }}</span>
+        {% endif %}
+      </div>
+      <p class="debate-card-desc">{{ debate.description }}</p>
+      <div class="debate-card-footer">
+        <div class="debate-card-meta">
+          <span class="badge badge-pro">👍 {{ debate.pro_label }}</span>
+          <span style="color: var(--text-muted); margin: 0 4px;">vs</span>
+          <span class="badge badge-con">👎 {{ debate.con_label }}</span>
+        </div>
+        <div class="debate-card-meta">💬 {{ debate.total_posts }}件</div>
+        <div class="debate-card-meta">❤️ {{ debate.total_likes }}</div>
+        <div class="debate-card-meta">🕐 {{ debate.created_at|date:"Y/m/d" }}</div>
+      </div>
+    </a>
+    {% endfor %}
+
+    <!-- ページネーション -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+      {% if page_obj.has_previous %}
+      <a href="?{% if query %}q={{ query }}&{% endif %}sort={{ sort }}&page={{ page_obj.previous_page_number }}" class="page-link">← 前へ</a>
+      {% endif %}
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <span class="page-link active">{{ num }}</span>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <a href="?{% if query %}q={{ query }}&{% endif %}sort={{ sort }}&page={{ num }}" class="page-link">{{ num }}</a>
+        {% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+      <a href="?{% if query %}q={{ query }}&{% endif %}sort={{ sort }}&page={{ page_obj.next_page_number }}" class="page-link">次へ →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">🔍</div>
+      <h3 class="empty-state-title">
+        {% if query %}「{{ query }}」に一致する討論が見つかりませんでした{% else %}キーワードを入力して検索してください{% endif %}
+      </h3>
+      {% if query %}
+      <p class="empty-state-desc">別のキーワードで試してみるか、新しい討論を作成しましょう</p>
+      <a href="{% url 'debates:create' %}" class="btn btn-primary">✏️ 討論を作成する</a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}ClashTalk - 対戦型ディベート{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}様々な議題について賛成・反対に分かれ、意見を交わすSNS型ディスカッションプラットフォーム{% endblock %}">
+
+  <!-- Preconnect for performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+
+  <!-- Main CSS -->
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- ナビゲーションバー -->
+<nav class="navbar">
+  <div class="navbar-inner">
+    <!-- ブランドロゴ -->
+    <a href="{% url 'debates:home' %}" class="navbar-brand">
+      <span class="brand-icon">⚡</span>
+      ClashTalk
+    </a>
+
+    <!-- 検索バー（PC） -->
+    <div class="navbar-search">
+      <form class="search-bar" action="{% url 'debates:search' %}" method="get">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" name="q" placeholder="討論を検索..." value="{{ request.GET.q|default:'' }}" autocomplete="off">
+        <button type="submit" aria-label="検索">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+
+    <!-- アクション -->
+    <div class="navbar-actions">
+      <a href="{% url 'debates:ranking' %}" class="btn btn-ghost btn-sm" title="ランキング">
+        🏆 ランキング
+      </a>
+      <a href="{% url 'debates:create' %}" class="btn btn-primary btn-sm">
+        ✏️ 討論を作成
+      </a>
+      <button class="theme-toggle" id="theme-toggle" title="ダークモード切替" aria-label="テーマ切替">
+        🌙
+      </button>
+      <!-- ハンバーガーメニュー（スマホ） -->
+      <button class="hamburger" id="hamburger" aria-label="メニュー" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- モバイルメニュー -->
+  <div class="mobile-menu" id="mobile-menu">
+    <div class="mobile-search">
+      <form class="search-bar" action="{% url 'debates:search' %}" method="get">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" name="q" placeholder="討論を検索..." value="{{ request.GET.q|default:'' }}">
+        <button type="submit" aria-label="検索">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+    <nav class="mobile-nav-links">
+      <a href="{% url 'debates:home' %}">🏠 ホーム</a>
+      <a href="{% url 'debates:create' %}">✏️ 討論を作成</a>
+      <a href="{% url 'debates:ranking' %}">🏆 ランキング</a>
+      <a href="{% url 'debates:search' %}">🔍 検索</a>
+      <hr style="border-color: var(--border); margin: 8px 0;">
+      {% for cat in global_categories %}
+      <a href="{% url 'debates:category' cat.slug %}">{{ cat.icon }} {{ cat.name }}</a>
+      {% endfor %}
+    </nav>
+  </div>
+</nav>
+
+<!-- メインコンテンツ -->
+<main>
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+</main>
+
+<!-- メッセージ通知 -->
+{% if messages %}
+<div class="messages-container" id="messages-container">
+  {% for message in messages %}
+  <div class="message-alert {% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% else %}info{% endif %}">
+    {% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}❌{% else %}ℹ️{% endif %}
+    {{ message }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- フッター -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">⚡ Clashtalk</div>
+    <nav class="footer-links">
+      <a href="{% url 'debates:home' %}">ホーム</a>
+      <a href="{% url 'debates:ranking' %}">ランキング</a>
+      <a href="{% url 'debates:create' %}">討論を作成</a>
+      <a href="{% url 'debates:search' %}">検索</a>
+    </nav>
+    <p class="footer-copy">&copy; 2026 ClashTalk. All rights reserved.</p>
+  </div>
+</footer>
+
+<!-- JavaScript -->
+<script src="{% static 'js/main.js' %}"></script>
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

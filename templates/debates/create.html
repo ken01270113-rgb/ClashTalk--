@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}討論を作成 - 討論SNS{% endblock %}
+
+{% block content %}
+<div style="padding: 20px 0;">
+
+  <!-- パンくずリスト -->
+  <nav style="margin-bottom: 16px; font-size: 0.85rem; color: var(--text-muted);">
+    <a href="{% url 'debates:home' %}" style="color: var(--text-muted);">ホーム</a>
+    <span style="margin: 0 6px;">›</span>
+    <span style="color: var(--text);">討論を作成</span>
+  </nav>
+
+  <div class="create-form-card">
+    <h1 class="create-form-title">✏️ 新しい討論を作成</h1>
+    <p class="create-form-subtitle">議題を設定して、みんなで議論しましょう</p>
+
+    <form method="post" action="{% url 'debates:create' %}" novalidate>
+      {% csrf_token %}
+
+      <!-- タイトル -->
+      <div class="form-group">
+        <label class="form-label" for="id_title">
+          タイトル <span class="required">*</span>
+        </label>
+        <input
+          type="text"
+          name="title"
+          id="id_title"
+          class="form-control {% if form.title.errors %}is-invalid{% endif %}"
+          placeholder="例：制服は必要か、AIは人間の仕事を奪うか"
+          maxlength="200"
+          value="{{ form.title.value|default:'' }}"
+          required
+          data-max-length="200"
+          data-counter-id="title-counter"
+        >
+        <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+          <span class="form-help">討論のテーマを簡潔に入力してください（最大200文字）</span>
+          <span class="char-counter" id="title-counter">0 / 200</span>
+        </div>
+        {% if form.title.errors %}
+        <p class="form-error">{{ form.title.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <!-- 説明 -->
+      <div class="form-group">
+        <label class="form-label" for="id_description">
+          説明 <span class="required">*</span>
+        </label>
+        <textarea
+          name="description"
+          id="id_description"
+          class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+          placeholder="討論の背景や詳細を入力してください。参加者が議論しやすいよう、具体的に書くと良いでしょう。"
+          rows="5"
+          maxlength="2000"
+          data-max-length="2000"
+          data-counter-id="desc-counter"
+          required
+        >{{ form.description.value|default:'' }}</textarea>
+        <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+          <span class="form-help">討論の背景や詳細を入力してください（最大2000文字）</span>
+          <span class="char-counter" id="desc-counter">0 / 2000</span>
+        </div>
+        {% if form.description.errors %}
+        <p class="form-error">{{ form.description.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <!-- カテゴリー -->
+      <div class="form-group">
+        <label class="form-label" for="id_category">カテゴリー</label>
+        <select name="category" id="id_category" class="form-control">
+          <option value="">カテゴリーを選択（省略可）</option>
+          {% for cat in categories %}
+          <option value="{{ cat.pk }}" {% if form.category.value == cat.pk|stringformat:'s' %}selected{% endif %}>
+            {{ cat.icon }} {{ cat.name }}
+          </option>
+          {% endfor %}
+        </select>
+        {% if form.category.errors %}
+        <p class="form-error">{{ form.category.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <!-- 賛成/反対ラベル -->
+      <div class="form-group">
+        <label class="form-label">賛成・反対の名称</label>
+        <p class="form-help" style="margin-bottom: 12px;">省略した場合は「賛成」「反対」と表示されます</p>
+        <div class="form-row">
+          <div class="label-pair">
+            <div class="label-pair-header pro">👍 賛成側の名称</div>
+            <input
+              type="text"
+              name="pro_label"
+              class="form-control"
+              placeholder="例：必要、賛成、Yes"
+              maxlength="50"
+              value="{{ form.pro_label.value|default:'' }}"
+            >
+          </div>
+          <div class="label-pair">
+            <div class="label-pair-header con">👎 反対側の名称</div>
+            <input
+              type="text"
+              name="con_label"
+              class="form-control"
+              placeholder="例：不要、反対、No"
+              maxlength="50"
+              value="{{ form.con_label.value|default:'' }}"
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- 投稿者名 -->
+      <div class="form-group">
+        <label class="form-label" for="author_name">あなたの名前</label>
+        <input
+          type="text"
+          name="author_name"
+          id="author_name"
+          class="form-control"
+          placeholder="匿名（省略可）"
+          maxlength="50"
+        >
+        <span class="form-help">省略した場合は「匿名」として投稿されます</span>
+      </div>
+
+      <!-- 送信ボタン -->
+      <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+        <a href="{% url 'debates:home' %}" class="btn btn-ghost">キャンセル</a>
+        <button type="submit" class="btn btn-primary btn-lg">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+          </svg>
+          討論を作成する
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 使い方ガイド -->
+  <div style="max-width: 700px; margin: 20px auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm);">
+    <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text); margin-bottom: 12px;">💡 良い討論を作るコツ</h3>
+    <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px;">
+      <li style="font-size: 0.88rem; color: var(--text-secondary); display: flex; gap: 8px;">
+        <span>✅</span>
+        <span>タイトルは「〜か」「〜すべきか」など、議論を促す形にしましょう</span>
+      </li>
+      <li style="font-size: 0.88rem; color: var(--text-secondary); display: flex; gap: 8px;">
+        <span>✅</span>
+        <span>説明には背景情報や議論のポイントを具体的に書くと参加者が議論しやすくなります</span>
+      </li>
+      <li style="font-size: 0.88rem; color: var(--text-secondary); display: flex; gap: 8px;">
+        <span>✅</span>
+        <span>賛成・反対の名称をカスタマイズすると、議論がより明確になります</span>
+      </li>
+      <li style="font-size: 0.88rem; color: var(--text-secondary); display: flex; gap: 8px;">
+        <span>⚠️</span>
+        <span>誹謗中傷・差別的な内容は禁止です。建設的な議論を心がけましょう</span>
+      </li>
+    </ul>
+  </div>
+
+</div>
+{% endblock %}
